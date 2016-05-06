@@ -1,0 +1,16 @@
+{
+  "name": "s3-papertrail",
+  "version": "0.0.1",
+  "description": "AWS lambda function for parsing S3 and CloudFront logs and pushing events into Papertrail.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Linus Wong",
+  "license": "MIT",
+  "dependencies": {
+    "split": "^1.0.0",
+    "winston": "^2.2.0",
+    "winston-papertrail": "^1.0.2"
+  }
+}
