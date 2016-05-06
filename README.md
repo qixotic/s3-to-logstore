@@ -8,16 +8,45 @@ via [Winston](https://github.com/winstonjs/winston) in a best-effort manner. Ada
 Amazon allows you to log Cloudfront activity or S3 accesses to your buckets, but only stores them as
 log objects on S3, sometimes gzipped (as with Cloudfront logs). While you can set up CloudWatch
 alerts for e.g. 4xx errors in Cloudfront traffic, there's no easy way to tail or search these logs
-to track down issues, but with this bit of Lambda glue, now you can!
+to track down issues. Now with this bit of Lambda glue, you can!
+
 
 ## Example Usage
 
-TODO: demo papertrail
+Papertrail demo:
+
+```
+$ npm install s3-to-logstore winston winston-papertrail
+```
+
+```
+### index.js ###
+
+var S3ToLogstore = require('s3-to-logstore');
+var winston = require('winston');
+require('winston-papertrail').Papertrail;
+
+var url = '<HOST>.papertrailapp.com:<PORT>';
+var format = 'cloudfront';
+var transport = new winston.transports.Papertrail({
+  host: url.split(':')[0],
+  port: url.split(':')[1],
+  hostname: format,
+  program: 'aws-lambda'
+});
+
+exports.handler = S3ToLogstore(format, transport);
+```
+
+```
+$ zip -r lambda.zip index.js node_modules/
+# Now upload the code to your Lambda function via the AWS console or command line.
+```
 
 Notes on adding an event source to a Lambda function:
-http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
-http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html
-But more generally for setting up S3 as an event source:
+* http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
+* http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html
+* General docs on setting up S3 as an event source:
 http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
 
 
@@ -27,6 +56,7 @@ For a static site hosted on S3 to publish logs to a bucket, the destination buck
 the same region.  For S3 to post event notifications to Lambda, the bucket must already be in a
 region supported by Lambda:
 https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/
+
 Therefore your static site must also be hosted in a lambda-supported region. Currently in the US
 that is only `us-east-1` and `us-west-2`. Cloudfront distributions fortunately can log to any S3
 bucket, so it's easier to reconfigure an existing setup to log to one of these regions.

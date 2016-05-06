@@ -2,10 +2,9 @@ var AWS = require('aws-sdk');
 var split = require('split');
 var util = require('util');
 var winston = require('winston');
-require('winston-papertrail').Papertrail;
 var zlib = require('zlib');
 
-var format = require('./formats/cloudfront');
+var logFormats = require('./formats');
 
 // data - json object representation of a log line.
 var _reformat = function(data) {
@@ -16,9 +15,9 @@ var _reformat = function(data) {
   return row.join(' ');
 }
 
-var _processEvent = function(logger, event, callback) {
-  // Read options from the event.
+var _processEvent = function(logFormat, logger, event, callback) {
   console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
+
   var record = event.Records[0];
   var srcRegion = record.awsRegion;
   var srcBucket = record.s3.bucket.name;
@@ -35,15 +34,15 @@ var _processEvent = function(logger, event, callback) {
   var s3 = new AWS.S3({ region: srcRegion });  // our s3 client
   var read = s3.getObject(params).createReadStream();
   var reader = read;
-  if (format.gzip) {
+  if (logFormat.gzip) {
     var gunzip = zlib.createGunzip();
     read.pipe(gunzip);
     reader = gunzip;
   }
 
-  var stream = reader.pipe(split()); // split() makes each line in the stream a processable chunk.
+  var stream = reader.pipe(split());  // split() makes each line in the stream a processable chunk.
   stream.on('data', function(row) {
-    var data = format.toJson(row);
+    var data = logFormat.toJson(row);
     if (data) {
       logger.log('info', _reformat(data));
     }
@@ -58,31 +57,24 @@ var _processEvent = function(logger, event, callback) {
   });
 }
 
-// Our AWS Lambda function.
+// Returns a function to use with AWS Lambda.
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html
-exports.handler = function(event, context, callback) {
-  // connect to Papertrail
-  var url = 'HOST.papertrailapp.com:PORT';
-  var tr = new winston.transports.Papertrail({
-    host: url.split(":")[0],
-    port: url.split(":")[1],
-    hostname: 'aws-lambda',
-    program: 'default',
-    showLevel: false,
-  });
+module.exports = function(format, transport) {
+  return function(event, context, callback) {
+    var logFormat = logFormats[format];
+    var logger = new winston.Logger({ transports: [transport] });
 
-  var logger = new winston.Logger({ transports: [tr] });
+    // Log every record to your favorite transport.
+    transport.on('connect', function() {
+      _processEvent(logFormat, logger, event, function(err) {
+        transport.close();
+        callback(err);
+      });
+    });
 
-  // log every record to Papertrail
-  tr.on('connect', function() {
-    _processEvent(logger, event, function(err) {
-      tr.close();
+    transport.on('error', function(err) {
       callback(err);
     });
-  });
-
-  tr.on('error', function(err) {
-    callback(err);
-  });
-};
+  };
+}

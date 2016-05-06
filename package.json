@@ -1,7 +1,7 @@
 {
-  "name": "s3-papertrail",
+  "name": "s3-to-logstore",
   "version": "0.0.1",
-  "description": "AWS lambda function for parsing S3 and CloudFront logs and pushing events into Papertrail.",
+  "description": "Creates an AWS lambda function for parsing S3 / CloudFront / Cloudtrail logs stored on S3 and pushes those events into your log storage of choice via Winston.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
