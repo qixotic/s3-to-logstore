@@ -7,12 +7,9 @@ var zlib = require('zlib');
 
 var format = require('./formats/cloudfront');
 
-// get reference to S3 client
-var s3 = new AWS.S3({ region: 'us-west-2' });
-
 // data - json object representation of a log line.
 var _reformat = function(data) {
-  row = [];
+  var row = [];
   for (var key in data) {
     row.push(util.format('%s="%s"', key, data[key]));
   }
@@ -22,9 +19,11 @@ var _reformat = function(data) {
 var _processEvent = function(logger, event, callback) {
   // Read options from the event.
   console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
-  var srcBucket = event.Records[0].s3.bucket.name;
+  var record = event.Records[0];
+  var srcRegion = record.awsRegion;
+  var srcBucket = record.s3.bucket.name;
   // Object key may have spaces or unicode non-ASCII characters.
-  var srcKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
+  var srcKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
 
   console.log('Processing', srcKey);
 
@@ -33,6 +32,7 @@ var _processEvent = function(logger, event, callback) {
     Key: srcKey
   };
 
+  var s3 = new AWS.S3({ region: srcRegion });  // our s3 client
   var read = s3.getObject(params).createReadStream();
   var reader = read;
   if (format.gzip) {
