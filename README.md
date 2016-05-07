@@ -1,6 +1,6 @@
 Upload AWS log files of various formats (Cloudfront, S3, Cloudtrail) to your log storage of choice
-via [Winston](https://github.com/winstonjs/winston) in a best-effort manner. Adapted from
-[WatchKeep](https://github.com/StudioLE/WatchKeep) and
+via [Winston](https://github.com/winstonjs/winston) in a best-effort manner using AWS Lambda and
+the Node.js v4.3 runtime. Adapted from [WatchKeep](https://github.com/StudioLE/WatchKeep) and
 [convox/papertrail](https://github.com/convox/papertrail); thanks!
 
 ## Motivation
@@ -17,6 +17,7 @@ The module takes the following options and returns a function to serve as our La
 * *format* - required, one of: `cloudfront`, `s3`, or `cloudtrail`
 * *transport* - required, a [Winston transport](https://github.com/winstonjs/winston/blob/master/docs/transports.md) object.
 * *reformatter* - function that takes a json object. If null, the default format is a string of key=value pairs. If you wish to log json, just return the object.
+* *callback* - function that takes an error param (may be null) and the Lambda function [handler's callback](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html). If this option is null, we log any error and call the handler's callback.
 
 ### Papertrail demo
 
@@ -39,7 +40,18 @@ var transport = new winston.transports.Papertrail({
   hostname: format,
   program: 'aws-lambda'
 });
-exports.handler = S3ToLogstore({ format: format, transport: transport });
+transport.on('error', function(error) {
+  console.log('transport error:', error);
+});
+var options = {
+  format: format,
+  transport: transport,
+  callback: function(error, lambdaCallback) {
+    transport.close();
+    lambdaCallback(error);
+  }
+};
+exports.handler = S3ToLogstore(options);
 ```
 
 ```

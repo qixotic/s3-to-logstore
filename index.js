@@ -65,19 +65,15 @@ var _processEvent = function(options, logger, event, callback) {
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html
 module.exports = function(options) {
-  return function(event, context, callback) {
+  return function(event, context, lambdaCallback) {
     var logger = new winston.Logger({ transports: [options.transport] });
-
+    var processCallback = options.callback || function(error, callback) {
+      if (error) logger.log('error', util.inspect(error));
+      callback(error);
+    };
     // Log every record to your favorite transport.
-    _processEvent(options, logger, event, function(err) {
-      if (typeof(options.transport.close) === 'function') {
-        options.transport.close();  // for e.g. Papertrail
-      }
-      callback(err);
-    });
-
-    options.transport.on('error', function(err) {
-      callback(err);
+    _processEvent(options, logger, event, function(error) {
+      processCallback(error, lambdaCallback);
     });
   };
 }
