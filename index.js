@@ -53,6 +53,7 @@ var _processEvent = function(logFormat, logger, event, callback) {
   });
 
   stream.on('end', function() {
+    console.log('Done processing.');
     callback();
   });
 }
@@ -66,11 +67,11 @@ module.exports = function(format, transport) {
     var logger = new winston.Logger({ transports: [transport] });
 
     // Log every record to your favorite transport.
-    transport.on('connect', function() {
-      _processEvent(logFormat, logger, event, function(err) {
-        transport.close();
-        callback(err);
-      });
+    _processEvent(logFormat, logger, event, function(err) {
+      if (typeof(transport.close) === 'function') {
+        transport.close();  // for e.g. Papertrail
+      }
+      callback(err);
     });
 
     transport.on('error', function(err) {

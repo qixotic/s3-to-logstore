@@ -13,7 +13,7 @@ to track down issues. Now with this bit of Lambda glue, you can!
 
 ## Example Usage
 
-Papertrail demo:
+### Papertrail demo
 
 ```
 $ npm install s3-to-logstore winston winston-papertrail
@@ -43,14 +43,41 @@ $ zip -r lambda.zip index.js node_modules/
 # Now upload the code to your Lambda function via the AWS console or command line.
 ```
 
-Notes on adding an event source to a Lambda function:
-* http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
+### Loggly demo
+
+```
+$ npm install s3-to-logstore winston winston-loggly
+```
+
+```
+### index.js ###
+
+var S3ToLogstore = require('s3-to-logstore');
+var winston = require('winston');
+require('winston-loggly');
+
+var format = 'cloudfront';
+var transport = new winston.transports.Loggly({
+  token: "<TOKEN>",
+  subdomain: "<SUBDOMAIN>",
+  tags: [format],
+  isBulk: true
+});
+
+exports.handler = S3ToLogstore(format, transport);
+```
+
+### Notes
+* For more transports, see https://github.com/winstonjs/winston/blob/master/docs/transports.md
+* How to set up an AWS Lambda function with S3:
+http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html
+  * Adding an event source to your Lambda function: http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
 * http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html
 * General docs on setting up S3 as an event source:
 http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
 
 
-## Caveats
+### Caveats
 
 For a static site hosted on S3 to publish logs to a bucket, the destination bucket must also be in
 the same region.  For S3 to post event notifications to Lambda, the bucket must already be in a
@@ -61,8 +88,11 @@ Therefore your static site must also be hosted in a lambda-supported region. Cur
 that is only `us-east-1` and `us-west-2`. Cloudfront distributions fortunately can log to any S3
 bucket, so it's easier to reconfigure an existing setup to log to one of these regions.
 
+You also can't have event notifications fire to two different lambda functions for overlapping
+object prefixes.
 
-### Why "best effort"?
+
+#### Why "best effort"?
 
 From [Amazon's docs](https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerLogs.html):
 ```
