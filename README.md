@@ -13,6 +13,11 @@ to track down issues. Now with this bit of Lambda glue, you can!
 
 ## Example Usage
 
+The module takes the following options and returns a function to serve as our Lambda handler:
+* *format* - required, one of: `cloudfront`, `s3`, or `cloudtrail`
+* *transport* - required, a [Winston transport](https://github.com/winstonjs/winston/blob/master/docs/transports.md) object.
+* *reformatter* - function that takes a json object. If null, the default format is a string of key=value pairs. If you wish to log json, just return the object.
+
 ### Papertrail demo
 
 ```
@@ -34,8 +39,7 @@ var transport = new winston.transports.Papertrail({
   hostname: format,
   program: 'aws-lambda'
 });
-
-exports.handler = S3ToLogstore(format, transport);
+exports.handler = S3ToLogstore({ format: format, transport: transport });
 ```
 
 ```
@@ -61,18 +65,28 @@ var transport = new winston.transports.Loggly({
   token: "<TOKEN>",
   subdomain: "<SUBDOMAIN>",
   tags: [format],
+  json: true,
   isBulk: true
 });
-
-exports.handler = S3ToLogstore(format, transport);
+var options = {
+  format: format,
+  transport: transport,
+  // Loggly prefers json. Let's also use their timestamp support.
+  reformatter: function(data) {
+    data.timestamp = data.date + 'T' + data.time + 'Z';
+    delete data['date'];
+    delete data['time'];
+    return data;
+  }
+};
+exports.handler = S3ToLogstore(options);
 ```
 
 ### Notes
-* For more transports, see https://github.com/winstonjs/winston/blob/master/docs/transports.md
 * How to set up an AWS Lambda function with S3:
 http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html
-  * Adding an event source to your Lambda function: http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
-* http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html
+  * First grant S3 permission to invoke your function: http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
+  * Then add S3 as an event source via the S3 console, triggering on PUTs: http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html
 * General docs on setting up S3 as an event source:
 http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
 

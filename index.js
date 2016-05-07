@@ -7,6 +7,7 @@ var zlib = require('zlib');
 var logFormats = require('./formats');
 
 // data - json object representation of a log line.
+// Returns a single string of concatenated key=value pairs.
 var _reformat = function(data) {
   var row = [];
   for (var key in data) {
@@ -15,9 +16,11 @@ var _reformat = function(data) {
   return row.join(' ');
 }
 
-var _processEvent = function(logFormat, logger, event, callback) {
+var _processEvent = function(options, logger, event, callback) {
   console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
 
+  var logFormat = logFormats[options.format];
+  var reformat = options.reformatter || _reformat;
   var record = event.Records[0];
   var srcRegion = record.awsRegion;
   var srcBucket = record.s3.bucket.name;
@@ -44,7 +47,7 @@ var _processEvent = function(logFormat, logger, event, callback) {
   stream.on('data', function(row) {
     var data = logFormat.toJson(row);
     if (data) {
-      logger.log('info', _reformat(data));
+      logger.log('info', reformat(data));
     }
   });
 
@@ -61,20 +64,19 @@ var _processEvent = function(logFormat, logger, event, callback) {
 // Returns a function to use with AWS Lambda.
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html
-module.exports = function(format, transport) {
+module.exports = function(options) {
   return function(event, context, callback) {
-    var logFormat = logFormats[format];
-    var logger = new winston.Logger({ transports: [transport] });
+    var logger = new winston.Logger({ transports: [options.transport] });
 
     // Log every record to your favorite transport.
-    _processEvent(logFormat, logger, event, function(err) {
-      if (typeof(transport.close) === 'function') {
-        transport.close();  // for e.g. Papertrail
+    _processEvent(options, logger, event, function(err) {
+      if (typeof(options.transport.close) === 'function') {
+        options.transport.close();  // for e.g. Papertrail
       }
       callback(err);
     });
 
-    transport.on('error', function(err) {
+    options.transport.on('error', function(err) {
       callback(err);
     });
   };
