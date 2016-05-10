@@ -23,6 +23,7 @@ The module takes the following options and returns a function to serve as our La
 
 ```
 $ npm install s3-to-logstore winston winston-papertrail
+# aws-sdk isn't needed unless testing locally, since the Lambda service already has it.
 ```
 
 ```
