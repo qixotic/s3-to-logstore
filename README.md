@@ -1,3 +1,5 @@
+[![NPM version](https://badge.fury.io/js/s3-to-logstore.svg)](http://badge.fury.io/js/s3-to-logstore)
+
 Upload AWS log files of various formats (Cloudfront, S3, Cloudtrail) to your log storage of choice
 via [Winston](https://github.com/winstonjs/winston) in a best-effort manner using AWS Lambda and
 the Node.js v4.3 runtime. Adapted from [WatchKeep](https://github.com/StudioLE/WatchKeep) and
