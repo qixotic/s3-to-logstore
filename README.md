@@ -102,6 +102,63 @@ http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html
 * General docs on setting up S3 as an event source:
 http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
 
+#### AWS Lambda from the command line
+
+First ensure that you've set `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID` in your environment
+corresponding to an IAM user with permissions to run these functions.
+
+```
+# ----- EXAMPLE -----
+function=s3LogsToPapertrail
+bucket=MY_BUCKET
+accountid=MY_ACCOUNT_ID
+region=us-west-2
+indexname=s3
+
+# Zip your js file and modules
+zip -r $indexname.zip $indexname.js node_modules/
+
+# Create your lambda function. Assumes you already created an execution role (see tutorial).
+aws lambda create-function \
+  --region $region \
+  --function-name $function \
+  --zip-file fileb://`pwd`/$indexname.zip \
+  --role arn:aws:iam::$accountid:role/lambda-s3-execution-role \
+  --handler $indexname.handler \
+  --runtime nodejs4.3  \
+  --timeout 10 \
+  --memory-size 128
+
+# Give S3 permission to invoke this lambda function. 'statement-id' is just some unique string.
+aws lambda add-permission \
+  --function-name $function \
+  --region $region \
+  --statement-id $function \
+  --action "lambda:InvokeFunction" \
+  --principal s3.amazonaws.com \
+  --source-arn arn:aws:s3:::$bucket \
+  --source-account $accountid
+
+# Need to update your package?
+aws lambda update-function-code \
+  --region $region \
+  --function-name $function \
+  --zip-file fileb://`pwd`/$indexname.zip
+```
+
+You can test your script in the Lambda console, or run the function locally with a test event:
+
+```
+# To run, install aws-sdk then: node test.js s3_test_event.txt
+const lambda = require('./s3.js');
+require('fs').readFile(process.argv[2], (err, data) => {
+  if (err) throw err;
+  lambda.handler(JSON.parse(data), {}, (err) => {
+    if (err) console.log(`Error: ${err}`);
+    console.log('Finished.');
+  });
+});
+```
 
 ### Caveats
 

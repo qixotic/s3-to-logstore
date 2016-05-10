@@ -37,11 +37,11 @@ var convert = function(row) {
   var fields = header.length;
 
   if (vals.length >= fields) {
-    header.forEach(function(key, index){
+    header.forEach(function(key, index) {
       obj[key] = vals[index];
     });
 
-    return obj
+    return obj;
   } else {
     console.log("Skipping row. Values don't match expected length.")
   }
