@@ -1,6 +1,6 @@
 {
   "name": "s3-to-logstore",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Creates an AWS lambda function for parsing S3 / CloudFront / Cloudtrail logs stored on S3 and pushes those events into your log storage of choice via Winston.",
   "keywords": [
     "aws",
