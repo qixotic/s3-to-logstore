@@ -5,63 +5,75 @@
 /*
 Example log entry.
 
-{"Records": [
+{ "Records": [
   {
-    "eventVersion": "1.0",
-    "userIdentity": {
-      "type": "IAMUser",
-      "principalId": "AIDAI2JXM4FBZZEXAMPLE",
-      "arn": "arn:aws:iam::123456789012:user/Alice",
-      "accountId": "123456789012",
-      "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
-      "userName": "Alice"
+    "awsRegion": "us-west-2",
+    "eventID": "0aafa322-d19c-4770-bb8d-a55bdexample",
+    "eventName": "DescribeTrails",
+    "eventSource": "cloudtrail.amazonaws.com",
+    "eventTime": "2016-05-06T23:42:00Z",
+    "eventType": "AwsApiCall",
+    "eventVersion": "1.04",
+    "recipientAccountId": "123456780000",
+    "requestID": "20899f06-13e4-11e6-a894-bd246example",
+    "requestParameters": {
+        "trailNameList": []
     },
-    "eventTime": "2013-10-26T03:08:58Z",
-    "eventSource": "iam.amazonaws.com",
-    "eventName": "CreateUser",
-    "awsRegion": "us-east-1",
-    "sourceIPAddress": "192.0.2.01",
-    "userAgent": "aws-cli/1.1.1 Python/2.7.4 Windows/7",
-    "requestParameters": {"userName": "Bob"},
-    "responseElements": {"user": {
-      "createDate": "Oct 26, 2013 3:08:58 AM",
-      "userName": "Bob",
-      "arn": "arn:aws:iam::123456789012:user/Bob",
-      "path": "/",
-      "userId": "AIDAIHQ2LPVSRIEXAMPLE"
-    }}
+    "responseElements": null,
+    "sourceIPAddress": "192.168.0.1",
+    "userAgent": "signin.amazonaws.com",
+    "userIdentity": {
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "accountId": "123456780000",
+        "arn": "arn:aws:iam::123456780000:user/ausername",
+        "invokedBy": "signin.amazonaws.com",
+        "principalId": "AIDAIRVC6GAIPZEXAMPLE",
+        "sessionContext": {
+            "attributes": {
+                "creationDate": "2016-05-06T16:15:45Z",
+                "mfaAuthenticated": "false"
+            }
+        },
+        "type": "IAMUser",
+        "userName": "ausername"
+    }
   }
   ]
 }
 */
 
 var reportFields = [
-  'eventVersion',
-  'userIdentity.type',
-  'userIdentity.principalId',
-  'userIdentity.arn',
-  'userIdentity.accountId',
-  'userIdentity.accessKeyId',
-  'userIdentity.userName',
-  'eventSource',
-  'eventName',
   'awsRegion',
+  'eventID',
+  'eventName',
+  'eventSource',
+  'eventTime',
+  'eventType',
+  'eventVersion',
+  'recipientAccountId',
+  'requestID',
+  // 'requestParameters',
+  // 'responseElements',
   'sourceIPAddress',
-  'userAgent'
+  'userAgent',
+  'userIdentity.accessKeyId',
+  'userIdentity.accountId',
+  'userIdentity.arn',
+  'userIdentity.invokedBy',
+  'userIdentity.principalId',
+  'userIdentity.type',
+  'userIdentity.userName'
 ];
-
-var SEPARATOR = ',\n';
 
 var convert = function(row) {
   var obj = JSON.parse(row);
 
   // Remove the array that wraps the objects.
   var records = [];
-  obj.Records.forEach(function(record){
-    records.push(JSON.stringify(record, undefined, 2));
+  obj.Records.forEach(function(record) {
+    records.push({ record: JSON.stringify(record, reportFields, 2) });
   });
-
-  return records.join(SEPARATOR) + SEPARATOR;
+  return records;
 };
 
 module.exports = {

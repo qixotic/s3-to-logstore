@@ -9,15 +9,14 @@ var logFormats = require('./formats');
 // data - json object representation of a log line.
 // Returns a single string of concatenated key=value pairs.
 var _reformat = function(data) {
-  var row = [];
-  for (var key in data) {
-    row.push(util.format('%s="%s"', key, data[key]));
-  }
+  var row = Object.keys(data).map(function(key) {
+    return util.format('%s="%s"', key, data[key]);
+  });
   return row.join(' ');
-}
+};
 
 var _processEvent = function(options, logger, event, callback) {
-  console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
+  console.log('Reading options from event:\n', util.inspect(event, { depth: 5 }));
 
   var logFormat = logFormats[options.format];
   var reformat = options.reformatter || _reformat;
@@ -25,7 +24,7 @@ var _processEvent = function(options, logger, event, callback) {
   var srcRegion = record.awsRegion;
   var srcBucket = record.s3.bucket.name;
   // Object key may have spaces or unicode non-ASCII characters.
-  var srcKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
+  var srcKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
 
   console.log('Processing', srcKey);
 
@@ -47,7 +46,11 @@ var _processEvent = function(options, logger, event, callback) {
   stream.on('data', function(row) {
     var data = logFormat.toJson(row);
     if (data) {
-      logger.log('info', reformat(data));
+      if (Array.isArray(data)) {
+        data.forEach(function(logline) { logger.log('info', reformat(logline)); });
+      } else {
+        logger.log('info', reformat(data));
+      }
     }
   });
 
@@ -59,7 +62,7 @@ var _processEvent = function(options, logger, event, callback) {
     console.log('Done processing.');
     callback();
   });
-}
+};
 
 // Returns a function to use with AWS Lambda.
 // http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html
@@ -76,4 +79,4 @@ module.exports = function(options) {
       processCallback(error, lambdaCallback);
     });
   };
-}
+};

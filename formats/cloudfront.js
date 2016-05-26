@@ -42,10 +42,8 @@ var convert = function(row) {
     });
 
     return obj;
-  } else {
-    console.log("Skipping row. Values don't match expected length.")
   }
-
+  console.log('Skipping row. Values don\'t match expected length.');
   return null;
 };
 
