@@ -17,7 +17,8 @@ Now with this bit of Lambda glue, you can!
 The module takes the following options and returns a function to serve as our Lambda handler:
 * *format* - required, one of: `cloudfront`, `s3`, or `cloudtrail`
 * *transport* - required, a [Winston transport](https://github.com/winstonjs/winston/blob/master/docs/transports.md) object.
-* *reformatter* - function that takes a json object. If null, the default format is a string of key=value pairs. If you wish to log json, just return the object.* *callback* - function that takes an error param (may be null) and the Lambda function [handler's callback](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html). If this option is null, we log any error and call the handler's callback.
+* *reformatter* - function that takes a json object. If null, the default format is a string of key=value pairs. If you wish to log json, just return the object.
+* *callback* - function that takes an error param (may be null) and the Lambda function [handler's callback](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html). If this option is null, we log any error and call the handler's callback.
 
 **[Papertrail demo](examples/papertrail.js)**
 
@@ -41,16 +42,15 @@ require('fs').readFile(process.argv[3], (err, data) => {
 ```
 
 ### Notes
-* How to set up an AWS Lambda function with S3:
-http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html
+* [How to set up an AWS Lambda function with S3](http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html)
   * First [grant S3 permission to invoke your function](http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html)
   * Then [add S3 as an event source via the S3 console, triggering on PUTs](http://docs.aws.amazon.com/AmazonS3/latest/UG/SettingBucketNotifications.html)
 * General docs on [setting up S3 as an event source](http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 
 #### AWS Lambda from the command line
 
-First ensure that you've set `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID` in
-your environment corresponding to an IAM user with permissions to run these functions.
+Ensure that `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID` are set in your
+environment for an IAM user with permissions to run these functions.
 
 ```
 # ----- EXAMPLE -----
@@ -63,7 +63,8 @@ indexname=papertrail
 # Zip your js file and modules
 zip -r $indexname.zip $indexname.js node_modules/
 
-# Create your lambda function. Assumes you already created an execution role (see tutorial).
+# Create your lambda function. Assumes you already created an execution role
+# (see tutorial).
 aws lambda create-function \
   --region $region \
   --function-name $function \
@@ -74,7 +75,8 @@ aws lambda create-function \
   --timeout 10 \
   --memory-size 128
 
-# Give S3 permission to invoke this lambda function. 'statement-id' is just some unique string.
+# Give S3 permission to invoke this lambda function. 'statement-id' is just
+# some unique string.
 aws lambda add-permission \
   --function-name $function \
   --region $region \
@@ -105,17 +107,22 @@ reconfigure an existing setup to log to one of these regions.
 You also can't have event notifications fire to two different lambda functions
 for overlapping object prefixes.
 
+Lastly, there isn't any great error handling going on here. E.g. if we're
+unable to connect to the transport, we'll lose that object's batch of events.
+If you want to be more robust, you'll probably want to incorporate your own
+work queue solution.
+
 #### Why "best effort"?
 
 From [Amazon's docs](https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerLogs.html):
 ```
 The completeness and timeliness of server logging, however, is not guaranteed.
 The log record for a particular request might be delivered long after the
-request was actually processed, or it might not be delivered at all. The purpose
-of server logs is to give you an idea of the nature of traffic against your
-bucket. It is not meant to be a complete accounting of all requests. It is rare
-to lose log records, but server logging is not meant to be a complete accounting
-of all requests.
+request was actually processed, or it might not be delivered at all. The
+purpose of server logs is to give you an idea of the nature of traffic against
+your bucket. It is not meant to be a complete accounting of all requests. It
+is rare to lose log records, but server logging is not meant to be a complete
+accounting of all requests.
 ```
 
 ## Acknowledgements
