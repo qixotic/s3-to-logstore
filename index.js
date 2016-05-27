@@ -7,10 +7,17 @@ var zlib = require('zlib');
 var logFormats = require('./formats');
 
 // data - json object representation of a log line.
+// prefix - string to prefix a key with. Used in flattening nested objects.
+//
 // Returns a single string of concatenated key=value pairs.
-var _reformat = function(data) {
+var _reformat = function(data, prefix) {
+  prefix = prefix || '';
   var row = Object.keys(data).map(function(key) {
-    return util.format('%s="%s"', key, data[key]);
+    if (typeof data[key] !== 'object') {
+      return util.format('%s%s="%s"', prefix, key, data[key]);
+    }
+    // Flatten this nested object.
+    return _reformat(data[key], key + '.');
   });
   return row.join(' ');
 };

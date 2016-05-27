@@ -55,14 +55,17 @@ var reportFields = [
   // 'requestParameters',
   // 'responseElements',
   'sourceIPAddress',
-  'userAgent',
-  'userIdentity.accessKeyId',
-  'userIdentity.accountId',
-  'userIdentity.arn',
-  'userIdentity.invokedBy',
-  'userIdentity.principalId',
-  'userIdentity.type',
-  'userIdentity.userName'
+  'userAgent'
+];
+
+var reportUserFields = [
+  'accessKeyId',
+  'accountId',
+  'arn',
+  'invokedBy',
+  'principalId',
+  'type',
+  'userName'
 ];
 
 var convert = function(row) {
@@ -71,7 +74,23 @@ var convert = function(row) {
   // Remove the array that wraps the objects.
   var records = [];
   obj.Records.forEach(function(record) {
-    records.push({ record: JSON.stringify(record, reportFields, 2) });
+    var event = {};
+    // Copy top level fields
+    reportFields.forEach(function(key) {
+      if (record.hasOwnProperty(key)) {
+        event[key] = record[key];
+      }
+    });
+    // Now copy the special userIdentity field
+    var userIdentity = {};
+    var recordUserId = record.userIdentity;
+    reportUserFields.forEach(function(key) {
+      if (recordUserId.hasOwnProperty(key)) {
+        userIdentity[key] = recordUserId[key];
+      }
+    });
+    event.userIdentity = userIdentity;
+    records.push(event);
   });
   return records;
 };
